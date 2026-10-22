@@ -150,14 +150,21 @@ function handleUpdate(update) {
   if (update.message) {
     const msg = update.message;
     const chatId = String(msg.chat.id);
+    const text = (msg.text || '').trim();
 
-    if (chatId !== String(ADMIN_CHAT_ID)) {
-      sendMessage(chatId, '🔒 Maaf, bot ini hanya untuk admin byhannavi.');
-      return;
+    console.log('Incoming message from ' + chatId + ': ' + text);
+
+    // Cek admin: jika ADMIN_CHAT_ID diisi dan bukan default, validasi
+    if (ADMIN_CHAT_ID && ADMIN_CHAT_ID !== 'ISI_CHAT_ID_TELEGRAM_KAMU' && String(ADMIN_CHAT_ID).trim() !== '') {
+      if (chatId !== String(ADMIN_CHAT_ID).trim()) {
+        console.warn('Unauthorized chatId: ' + chatId + ', expected: ' + ADMIN_CHAT_ID);
+        sendMessage(chatId, `🔒 ID Telegram kamu: \`${chatId}\`\nID ini belum cocok dengan ADMIN_CHAT_ID di script.`);
+        return;
+      }
     }
 
-    const text = (msg.text || '').trim();
     const state = getState(chatId);
+    console.log('Current state for ' + chatId + ': ' + JSON.stringify(state));
 
     if (text.startsWith('/')) {
       handleCommand(chatId, text, msg);
@@ -431,6 +438,40 @@ function sendMessage(chatId, text, replyMarkup) {
   });
 }
 
+function sendMessage(chatId, text, replyMarkup) {
+  const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+  const payload = {
+    chat_id: chatId,
+    text: text,
+    parse_mode: 'Markdown'
+  };
+  if (replyMarkup) payload.reply_markup = JSON.stringify(replyMarkup);
+
+  try {
+    const res = UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+    const resultText = res.getContentText();
+    console.log('Telegram response: ' + resultText);
+    const json = JSON.parse(resultText);
+    // Jika format Markdown gagal diparse oleh Telegram, kirim ulang sebagai plain text
+    if (!json.ok && json.description && json.description.includes('entities')) {
+      delete payload.parse_mode;
+      UrlFetchApp.fetch(url, {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      });
+    }
+  } catch (err) {
+    console.error('sendMessage fetch error: ' + err);
+  }
+}
+
 function answerCallbackQuery(queryId) {
   UrlFetchApp.fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/answerCallbackQuery`, {
     method: 'post',
@@ -452,20 +493,34 @@ function getFileUrl(fileId) {
 }
 
 // ─────────────────────────────────────────────
-//  STATE MANAGEMENT (via Cache)
+//  STATE MANAGEMENT (via PropertiesService - 100% Persisten & Anti-Reset)
 // ─────────────────────────────────────────────
 function getState(chatId) {
-  const raw = cache.get('state_' + chatId);
-  return raw ? JSON.parse(raw) : null;
+  try {
+    const raw = PropertiesService.getScriptProperties().getProperty('state_' + chatId);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) {
+    console.error('getState error: ' + e);
+    return null;
+  }
 }
 
 function setState(chatId, state) {
-  cache.put('state_' + chatId, JSON.stringify(state), 600); // 10 menit TTL
+  try {
+    PropertiesService.getScriptProperties().setProperty('state_' + chatId, JSON.stringify(state));
+  } catch(e) {
+    console.error('setState error: ' + e);
+  }
 }
 
 function clearState(chatId) {
-  cache.remove('state_' + chatId);
+  try {
+    PropertiesService.getScriptProperties().deleteProperty('state_' + chatId);
+  } catch(e) {
+    console.error('clearState error: ' + e);
+  }
 }
+
 
 function setWebhook() {
   const webhookUrl = ScriptApp.getService().getUrl();
