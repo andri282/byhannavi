@@ -193,7 +193,7 @@ function startPrelovedFlow(chatId) {
 // ─────────────────────────────────────────────
 function startAffiliateFlow(chatId) {
   setState(chatId, { flow: 'affiliate', step: 'nama' });
-  sendMessage(chatId, `🔗 *Tambah Produk Affiliate*\n\nLangkah 1/6: Kirim *nama produk*\n_(contoh: Wardah Lightening Set)_`);
+  sendMessage(chatId, `🔗 *Tambah Produk Affiliate*\n\nLangkah 1/7: Kirim *nama produk*\n_(contoh: Wardah Lightening Set)_`);
 }
 
 // ─────────────────────────────────────────────
@@ -212,7 +212,15 @@ function handleFlow(chatId, msg, state) {
 
 function handlePrelovedStep(chatId, msg, state, text, photo) {
   const steps = ['nama', 'kategori', 'kondisi', 'ukuran', 'harga', 'deskripsi', 'foto'];
-  const labels = ['nama barang', 'kategori (Baju/Tas/Sepatu/Outer/dll)', 'kondisi (Like New/Good/Fair)', 'ukuran (S/M/L/XL/dll atau -)', 'harga (angka saja, contoh: 150000)', 'deskripsi singkat', 'foto barang'];
+  const labels = [
+    'nama barang',
+    'kategori (Baju, Tas, Sepatu, Outer, dll)',
+    'kondisi (Like New, Good, atau Fair)',
+    'ukuran (S, M, L, XL, atau - jika all size)',
+    'harga (angka saja, contoh: 150000)',
+    'deskripsi singkat barang',
+    'foto barang'
+  ];
   const stepNum = steps.indexOf(state.step);
 
   // Langkah foto
@@ -272,7 +280,15 @@ function handlePrelovedStep(chatId, msg, state, text, photo) {
 
 function handleAffiliateStep(chatId, msg, state, text, photo) {
   const steps = ['nama', 'kategori', 'platform', 'harga', 'catatan', 'link', 'foto'];
-  const labels = ['nama produk', 'kategori produk', 'platform (Shopee/Tokopedia/Lazada)', 'harga perkiraan (angka atau -)', 'catatan/alasan rekomendasi', 'link affiliate', 'foto produk'];
+  const labels = [
+    'nama produk',
+    'kategori produk (Fashion, Skincare, Bayi, dll)',
+    'nama platform (Shopee, Tokopedia, TikTok Shop, dll)',
+    'harga perkiraan (angka saja, atau - jika skip)',
+    'catatan / alasan rekomendasi kamu',
+    'link affiliate produk',
+    'foto produk'
+  ];
   const stepNum = steps.indexOf(state.step);
 
   if (state.step === 'foto') {
