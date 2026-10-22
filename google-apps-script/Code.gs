@@ -13,9 +13,9 @@
 // =============================================
 
 // ── CONFIG — EDIT BAGIAN INI ──
-const TELEGRAM_TOKEN = 'ISI_TOKEN_BOT_TELEGRAM_KAMU';
-const SPREADSHEET_ID = 'ISI_ID_SPREADSHEET_KAMU';
-const ADMIN_CHAT_ID  = 'ISI_CHAT_ID_TELEGRAM_KAMU';  // chat ID pemilik bot
+const TELEGRAM_TOKEN = '8fdfefevDOI';
+const SPREADSHEET_ID = '1924MGtbCvxxxx7NsEbkksBGP9l8XefvMAA4dk';
+const ADMIN_CHAT_ID  = 'xxxxxx';  // chat ID pemilik bot
 
 // Sheet names
 const SHEET_PRELOVED  = 'Preloved';
@@ -34,7 +34,7 @@ function doPost(e) {
     if (update.update_id) {
       const lockKey = 'upd_' + update.update_id;
       if (cache.get(lockKey)) {
-        return ContentService.createTextOutput('OK');
+        return HtmlService.createHtmlOutput('OK');
       }
       cache.put(lockKey, '1', 120);
     }
@@ -42,7 +42,7 @@ function doPost(e) {
   } catch (err) {
     Logger.log('Error: ' + err.toString());
   }
-  return ContentService.createTextOutput('OK');
+  return HtmlService.createHtmlOutput('OK');
 }
 
 
@@ -517,3 +517,14 @@ function testSendMessage() {
   sendMessage(ADMIN_CHAT_ID, '✅ Bot byhannavi aktif! Ketik /menu untuk mulai.');
 }
 
+
+// ─────────────────────────────────────────────
+//  WEBHOOK DIAGNOSTICS — Aman dijalankan dari editor
+// ─────────────────────────────────────────────
+function checkWebhookInfo() {
+  const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/getWebhookInfo`;
+  const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  const data = JSON.parse(res.getContentText());
+  console.log(JSON.stringify(data, null, 2));
+  return data;
+}
