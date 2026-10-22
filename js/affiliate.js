@@ -5,13 +5,27 @@
 let allAffiliates = [];
 let activeAffCat = 'Semua';
 
+function cleanLink(raw) {
+  if (!raw || raw.trim() === '' || raw.trim() === '-') return '#';
+  let str = raw.trim();
+  if (!str.startsWith('http://') && !str.startsWith('https://') && !str.startsWith('//')) {
+    str = 'https://' + str;
+  }
+  return str;
+}
+
 function parseCSV(text) {
   const lines = text.trim().split('\n');
   const headers = parseCSVLine(lines[0]);
   return lines.slice(1).map(line => {
     const vals = parseCSVLine(line);
     const obj = {};
-    headers.forEach((h, i) => { obj[h.trim()] = (vals[i] || '').trim(); });
+    headers.forEach((h, i) => { 
+      let key = h.trim().toLowerCase();
+      // Toleransi typo / nama alternatif header
+      if (key === 'lilnk' || key === 'tautan' || key === 'url') key = 'link';
+      obj[key] = (vals[i] || '').trim(); 
+    });
     return obj;
   }).filter(r => r.nama && r.nama.trim() !== '');
 }
@@ -81,8 +95,12 @@ function renderAffiliates(items) {
   grid.innerHTML = filtered.map((a, i) => {
     const priceStr = formatRupiah(a.harga);
     const platform = a.platform || 'Shopee';
+    const targetUrl = cleanLink(a.link || a.lilnk);
+    const hasLink = targetUrl !== '#';
+
     return `
-    <div class="affiliate-card fade-up" style="animation-delay:${i*0.05}s" id="aff-card-${i}">
+    <div class="affiliate-card fade-up" style="animation-delay:${i*0.05}s; cursor:${hasLink ? 'pointer' : 'default'}" id="aff-card-${i}"
+         ${hasLink ? `onclick="window.open('${targetUrl}', '_blank', 'noopener,noreferrer'); trackClick('${a.nama.replace(/'/g, "\\'")}')"` : ''}>
       <div class="affiliate-img-wrap">
         <img class="affiliate-img" src="${a.foto || 'images/placeholder.jpg'}" 
              alt="${a.nama}" loading="lazy"
@@ -95,16 +113,17 @@ function renderAffiliates(items) {
         <div class="affiliate-note">${a.catatan || a.deskripsi || 'Rekomendasi dari byhannavi ✨'}</div>
         <div class="affiliate-footer">
           ${priceStr ? `<div class="affiliate-price">${priceStr}</div>` : '<div></div>'}
-          <a href="${a.link || '#'}" target="_blank" rel="noopener noreferrer"
-             class="btn-shop" id="btn-shop-${i}" onclick="trackClick('${a.nama}')">
+          <a href="${targetUrl}" target="_blank" rel="noopener noreferrer"
+             class="btn-shop" id="btn-shop-${i}" onclick="event.stopPropagation(); trackClick('${a.nama.replace(/'/g, "\\'")}')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            Beli
+            Beli di ${platform}
           </a>
         </div>
       </div>
     </div>`;
   }).join('');
 }
+
 
 function buildAffCategories(items) {
   const cats = ['Semua', ...new Set(items.map(a => a.kategori).filter(Boolean))];
