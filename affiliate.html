@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rekomendasi — byhannavi</title>
+  <meta name="description" content="Kumpulan link produk rekomendasi pilihan byhannavi dari Shopee, Tokopedia, dan platform lainnya.">
+  <meta property="og:title" content="Rekomendasi byhannavi — Produk Pilihan">
+  <meta property="og:description" content="Produk-produk yang sudah dicoba dan direkomendasikan langsung oleh byhannavi.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔗</text></svg>">
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">byhannavi</a>
+    
+    <div class="search-wrapper" style="visibility:hidden; pointer-events:none;">
+      <!-- spacer -->
+    </div>
+
+    <ul class="nav-links">
+      <li><a href="index.html" id="nav-preloved">Preloved</a></li>
+      <li><a href="affiliate.html" class="active" id="nav-affiliate">Rekomendasi</a></li>
+    </ul>
+  </nav>
+</header>
+
+<!-- ── Hero ── -->
+<section class="affiliate-hero">
+  <div class="hero-eyebrow">✦ Curated Picks</div>
+  <h1 class="hero-title">Produk <em>Favorit</em><br>Pilihan Hanna</h1>
+  <p class="hero-sub" style="max-width:500px; margin:0 auto">
+    Produk-produk yang sudah dicoba, dipakai, dan direkomendasikan langsung. 
+    Klik untuk beli via link affiliate ya kak! ✨
+  </p>
+</section>
+
+<!-- ── Config Banner ── -->
+<div class="config-banner" id="configBanner">
+  ⚠️ Ini adalah <strong>data demo</strong>. Silakan setup Google Sheets agar produk rekomendasi tampil dari spreadsheet kamu. 
+  <a href="SETUP.md" target="_blank">Baca panduan →</a>
+</div>
+
+<!-- ── Filter ── -->
+<div class="filter-section" style="max-width:1200px; margin:0 auto; padding:24px 20px;">
+  <span class="filter-label">Kategori</span>
+  <div class="filter-pills" id="affFilterPills">
+    <button class="pill active" id="aff-pill-Semua">Semua</button>
+  </div>
+  <span class="filter-count" id="affCount"></span>
+</div>
+
+<div class="divider">
+  <div class="divider-line"></div>
+  <span class="divider-text">Rekomendasi Byhannavi</span>
+  <div class="divider-line"></div>
+</div>
+
+<!-- ── Affiliate Grid ── -->
+<div class="affiliate-grid" id="affiliateGrid">
+  <!-- Diisi oleh JS -->
+</div>
+
+<!-- ── Disclaimer ── -->
+<div style="text-align:center; padding: 0 20px 40px; max-width:600px; margin:0 auto;">
+  <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.7;">
+    ℹ️ Link di halaman ini menggunakan <strong style="color:var(--text-secondary)">affiliate link</strong>. 
+    Byhannavi mendapatkan komisi kecil ketika kamu membeli melalui link ini, 
+    tanpa biaya tambahan untuk kamu. Terima kasih sudah mendukung! 💛
+  </p>
+</div>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="footer-logo">byhannavi</div>
+  <div class="footer-links">
+    <a href="index.html">Preloved</a>
+    <a href="affiliate.html">Rekomendasi</a>
+    <a href="https://www.threads.net/@byhannavi" target="_blank" rel="noopener">Threads</a>
+    <a href="https://www.instagram.com/byhannavi" target="_blank" rel="noopener">Instagram</a>
+  </div>
+  <div class="footer-copy">© 2024 byhannavi · Made with 🤍</div>
+</footer>
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="js/affiliate.js"></script>
+
+</body>
+</html>
