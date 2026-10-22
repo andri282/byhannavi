@@ -181,154 +181,124 @@ function handleUpdate(update) {
 }
 
 // ─────────────────────────────────────────────
-//  PRELOVED FLOW
+//  STEP DEFINITIONS (Aman dari Entity Conflict Telegram)
+// ─────────────────────────────────────────────
+const PRELOVED_STEPS = [
+  { field: 'nama', label: 'nama barang', hint: 'contoh: Blazer Vintage Cream' },
+  { field: 'kategori', label: 'kategori barang', hint: 'contoh: Baju, Outer, Tas, Sepatu, dll' },
+  { field: 'kondisi', label: 'kondisi barang', hint: 'contoh: Like New, Good, atau Fair' },
+  { field: 'ukuran', label: 'ukuran barang', hint: 'contoh: S, M, L, XL, atau - jika all size' },
+  { field: 'harga', label: 'harga jual', hint: 'angka saja, contoh: 150000' },
+  { field: 'deskripsi', label: 'deskripsi singkat', hint: 'contoh: Baru 1x pakai, bahan tebal premium' },
+  { field: 'foto', label: 'foto barang', hint: 'kirim foto, URL gambar, atau ketik - untuk lewati' }
+];
+
+const AFFILIATE_STEPS = [
+  { field: 'nama', label: 'nama produk', hint: 'contoh: Wardah Lightening Set' },
+  { field: 'kategori', label: 'kategori produk', hint: 'contoh: Skincare, Fashion, Perlengkapan Bayi' },
+  { field: 'platform', label: 'nama platform', hint: 'contoh: Shopee, Tokopedia, TikTok Shop' },
+  { field: 'harga', label: 'harga perkiraan', hint: 'angka saja contoh: 85000, atau - jika skip' },
+  { field: 'catatan', label: 'catatan rekomendasi', hint: 'contoh: Bahannya sangat nyaman dan awet' },
+  { field: 'link', label: 'link affiliate', hint: 'paste link Shopee atau Tokopedia kamu' },
+  { field: 'foto', label: 'foto produk', hint: 'kirim foto, URL gambar, atau ketik - untuk lewati' }
+];
+
+function sendStepPrompt(chatId, flowName, stepIndex) {
+  const steps = flowName === 'preloved' ? PRELOVED_STEPS : AFFILIATE_STEPS;
+  const current = steps[stepIndex];
+  const stepNum = stepIndex + 1;
+  const total = steps.length;
+  const title = flowName === 'preloved' ? '➕ *Tambah Barang Preloved*' : '🔗 *Tambah Produk Affiliate*';
+
+  const text = `${title}\n\nLangkah ${stepNum}/${total}: Kirim *${current.label}*\n_(${current.hint})_`;
+  sendMessage(chatId, text);
+}
+
+// ─────────────────────────────────────────────
+//  FLOW STARTERS
 // ─────────────────────────────────────────────
 function startPrelovedFlow(chatId) {
-  setState(chatId, { flow: 'preloved', step: 'nama' });
-  sendMessage(chatId, `➕ *Tambah Barang Preloved*\n\nLangkah 1/7: Kirim *nama barang*\n_(contoh: Blazer Cream Vintage)_`);
+  setState(chatId, { flow: 'preloved', step: 'nama', data: {} });
+  sendStepPrompt(chatId, 'preloved', 0);
 }
 
-// ─────────────────────────────────────────────
-//  AFFILIATE FLOW
-// ─────────────────────────────────────────────
 function startAffiliateFlow(chatId) {
-  setState(chatId, { flow: 'affiliate', step: 'nama' });
-  sendMessage(chatId, `🔗 *Tambah Produk Affiliate*\n\nLangkah 1/7: Kirim *nama produk*\n_(contoh: Wardah Lightening Set)_`);
+  setState(chatId, { flow: 'affiliate', step: 'nama', data: {} });
+  sendStepPrompt(chatId, 'affiliate', 0);
 }
 
 // ─────────────────────────────────────────────
-//  FLOW HANDLER
+//  FLOW HANDLER (Unified & Bulletproof)
 // ─────────────────────────────────────────────
 function handleFlow(chatId, msg, state) {
   const text = (msg.text || '').trim();
   const photo = msg.photo;
+  const steps = state.flow === 'preloved' ? PRELOVED_STEPS : AFFILIATE_STEPS;
+  const stepIndex = steps.findIndex(s => s.field === state.step);
 
-  if (state.flow === 'preloved') {
-    handlePrelovedStep(chatId, msg, state, text, photo);
-  } else if (state.flow === 'affiliate') {
-    handleAffiliateStep(chatId, msg, state, text, photo);
-  }
-}
-
-function handlePrelovedStep(chatId, msg, state, text, photo) {
-  const steps = ['nama', 'kategori', 'kondisi', 'ukuran', 'harga', 'deskripsi', 'foto'];
-  const labels = [
-    'nama barang',
-    'kategori (Baju, Tas, Sepatu, Outer, dll)',
-    'kondisi (Like New, Good, atau Fair)',
-    'ukuran (S, M, L, XL, atau - jika all size)',
-    'harga (angka saja, contoh: 150000)',
-    'deskripsi singkat barang',
-    'foto barang'
-  ];
-  const stepNum = steps.indexOf(state.step);
-
-  // Langkah foto
-  if (state.step === 'foto') {
-    let fotoUrl = '';
-    if (photo && photo.length > 0) {
-      const fileId = photo[photo.length - 1].file_id;
-      fotoUrl = getFileUrl(fileId);
-    } else if (text.startsWith('http')) {
-      fotoUrl = text;
-    } else if (text === '-') {
-      fotoUrl = '';
-    } else {
-      sendMessage(chatId, '⚠️ Kirim foto barang, URL gambar, atau ketik - untuk skip');
-      return;
-    }
-
-    state.data.foto = fotoUrl;
-    state.data.status = 'Available';
-    state.data.tanggal = new Date().toLocaleDateString('id-ID');
-
-    // Simpan ke sheet
-    saveToSheet(SHEET_PRELOVED, [
-      state.data.nama, state.data.kategori, state.data.kondisi,
-      state.data.ukuran, state.data.harga, state.data.deskripsi,
-      fotoUrl, 'Available', new Date().toLocaleDateString('id-ID')
-    ]);
-
+  if (stepIndex === -1) {
     clearState(chatId);
-    sendMessage(chatId, `✅ *Berhasil ditambahkan!*\n\n🏷️ ${state.data.nama}\n📦 ${state.data.kategori} · ${state.data.kondisi}\n💰 Rp ${Number(state.data.harga).toLocaleString('id-ID')}\n\nBarang sudah tampil di website byhannavi 🎉`, null);
     sendMainMenu(chatId);
     return;
   }
 
-  // Step lain
-  if (!text && state.step !== 'foto') {
-    sendMessage(chatId, `⚠️ Tolong isi ${labels[stepNum]}`);
-    return;
-  }
+  const current = steps[stepIndex];
 
-  if (!state.data) state.data = {};
-  state.data[state.step] = text;
-
-  const nextStep = steps[stepNum + 1];
-  state.step = nextStep;
-  setState(chatId, state);
-
-  const nextNum = stepNum + 2;
-  const nextLabel = labels[stepNum + 1];
-
-  if (nextStep === 'foto') {
-    sendMessage(chatId, `Langkah ${nextNum}/7: Kirim *foto barang*\n_(bisa foto langsung, URL, atau ketik - untuk skip)_`);
-  } else {
-    sendMessage(chatId, `Langkah ${nextNum}/7: Kirim *${nextLabel}*`);
-  }
-}
-
-function handleAffiliateStep(chatId, msg, state, text, photo) {
-  const steps = ['nama', 'kategori', 'platform', 'harga', 'catatan', 'link', 'foto'];
-  const labels = [
-    'nama produk',
-    'kategori produk (Fashion, Skincare, Bayi, dll)',
-    'nama platform (Shopee, Tokopedia, TikTok Shop, dll)',
-    'harga perkiraan (angka saja, atau - jika skip)',
-    'catatan / alasan rekomendasi kamu',
-    'link affiliate produk',
-    'foto produk'
-  ];
-  const stepNum = steps.indexOf(state.step);
-
-  if (state.step === 'foto') {
+  // ── Step terakhir: Foto
+  if (current.field === 'foto') {
     let fotoUrl = '';
     if (photo && photo.length > 0) {
       fotoUrl = getFileUrl(photo[photo.length - 1].file_id);
     } else if (text.startsWith('http')) {
       fotoUrl = text;
-    } else {
+    } else if (text === '-') {
       fotoUrl = '';
+    } else {
+      sendMessage(chatId, '⚠️ Kirim foto produk, link gambar, atau ketik - untuk lewati.');
+      return;
     }
 
-    saveToSheet(SHEET_AFFILIATE, [
-      state.data.nama, state.data.kategori, state.data.platform,
-      state.data.harga, state.data.catatan, state.data.link, fotoUrl,
-      new Date().toLocaleDateString('id-ID')
-    ]);
+    if (!state.data) state.data = {};
+    state.data.foto = fotoUrl;
+
+    if (state.flow === 'preloved') {
+      saveToSheet(SHEET_PRELOVED, [
+        state.data.nama || '-', state.data.kategori || '-', state.data.kondisi || '-',
+        state.data.ukuran || '-', state.data.harga || '0', state.data.deskripsi || '-',
+        fotoUrl, 'Available', new Date().toLocaleDateString('id-ID')
+      ]);
+      sendMessage(chatId, `✅ *Berhasil Ditambahkan!*\n\n🏷️ ${state.data.nama}\n📦 ${state.data.kategori} · ${state.data.kondisi}\n💰 Rp ${Number(state.data.harga || 0).toLocaleString('id-ID')}\n\nBarang sudah tampil di website byhannavi! 🎉`);
+    } else {
+      saveToSheet(SHEET_AFFILIATE, [
+        state.data.nama || '-', state.data.kategori || '-', state.data.platform || '-',
+        state.data.harga || '-', state.data.catatan || '-', state.data.link || '-',
+        fotoUrl, new Date().toLocaleDateString('id-ID')
+      ]);
+      sendMessage(chatId, `✅ *Rekomendasi Ditambahkan!*\n\n🔗 ${state.data.nama}\n🛒 ${state.data.platform}\n\nProduk sudah tampil di halaman Rekomendasi byhannavi! 🎉`);
+    }
 
     clearState(chatId);
-    sendMessage(chatId, `✅ *Rekomendasi ditambahkan!*\n\n🔗 ${state.data.nama}\n🛒 ${state.data.platform}\n\nSudah tampil di halaman Rekomendasi 🎉`);
     sendMainMenu(chatId);
     return;
   }
 
-  if (!text) { sendMessage(chatId, `⚠️ Tolong isi ${labels[stepNum]}`); return; }
+  // ── Step input teks
+  if (!text) {
+    sendMessage(chatId, `⚠️ Tolong kirimkan teks untuk ${current.label}`);
+    return;
+  }
 
   if (!state.data) state.data = {};
-  state.data[state.step] = text;
+  state.data[current.field] = text;
 
-  const nextStep = steps[stepNum + 1];
-  state.step = nextStep;
+  // Lanjut ke step berikutnya
+  const nextIndex = stepIndex + 1;
+  state.step = steps[nextIndex].field;
   setState(chatId, state);
 
-  const nextNum = stepNum + 2;
-  if (nextStep === 'foto') {
-    sendMessage(chatId, `Langkah ${nextNum}/7: Kirim *foto produk*\n_(bisa foto, URL, atau ketik - untuk skip)_`);
-  } else {
-    sendMessage(chatId, `Langkah ${nextNum}/7: Kirim *${labels[stepNum + 1]}*`);
-  }
+  sendStepPrompt(chatId, state.flow, nextIndex);
 }
+
 
 // ─────────────────────────────────────────────
 //  SHEETS HELPERS
