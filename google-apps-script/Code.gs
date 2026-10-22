@@ -421,22 +421,6 @@ function deleteRow(chatId, nama, sheetName) {
 // ─────────────────────────────────────────────
 //  TELEGRAM API HELPERS
 // ─────────────────────────────────────────────
-function sendMessage(chatId, text, replyMarkup) {
-  const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
-  const payload = {
-    chat_id: chatId,
-    text: text,
-    parse_mode: 'Markdown'
-  };
-  if (replyMarkup) payload.reply_markup = JSON.stringify(replyMarkup);
-
-  UrlFetchApp.fetch(url, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  });
-}
 
 function sendMessage(chatId, text, replyMarkup) {
   const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
