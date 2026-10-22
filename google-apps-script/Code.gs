@@ -22,7 +22,7 @@ const SHEET_PRELOVED  = 'Preloved';
 const SHEET_AFFILIATE = 'Affiliate';
 
 // ── State management (per session via Cache)
-const cache = CacheService.getUserCache();
+const cache = CacheService.getScriptCache();
 
 // ─────────────────────────────────────────────
 //  WEBHOOK HANDLER
@@ -30,6 +30,14 @@ const cache = CacheService.getUserCache();
 function doPost(e) {
   try {
     const update = JSON.parse(e.postData.contents);
+    // Anti-duplikat / retry Telegram
+    if (update.update_id) {
+      const lockKey = 'upd_' + update.update_id;
+      if (cache.get(lockKey)) {
+        return ContentService.createTextOutput('OK');
+      }
+      cache.put(lockKey, '1', 120);
+    }
     handleUpdate(update);
   } catch (err) {
     Logger.log('Error: ' + err.toString());
@@ -37,37 +45,6 @@ function doPost(e) {
   return ContentService.createTextOutput('OK');
 }
 
-function handleUpdate(update) {
-  // Handle foto/dokumen
-  if (update.message) {
-    const msg = update.message;
-    const chatId = String(msg.chat.id);
-
-    // Cek apakah admin
-    if (chatId !== String(ADMIN_CHAT_ID)) {
-      sendMessage(chatId, '🔒 Maaf, bot ini hanya untuk admin byhannavi.');
-      return;
-    }
-
-    const text = (msg.text || '').trim();
-    const state = getState(chatId);
-
-    // ── Command handler
-    if (text.startsWith('/')) {
-      handleCommand(chatId, text, msg);
-      return;
-    }
-
-    // ── State-based flow
-    if (state && state.flow) {
-      handleFlow(chatId, msg, state);
-      return;
-    }
-
-    // ── Default
-    sendMainMenu(chatId);
-  }
-}
 
 // ─────────────────────────────────────────────
 //  COMMANDS
@@ -490,16 +467,22 @@ function clearState(chatId) {
   cache.remove('state_' + chatId);
 }
 
-// ─────────────────────────────────────────────
-//  SETUP WEBHOOK (jalankan sekali setelah deploy)
-// ─────────────────────────────────────────────
 function setWebhook() {
   const webhookUrl = ScriptApp.getService().getUrl();
   const res = UrlFetchApp.fetch(
-    `https://api.telegram.org/bot${TELEGRAM_TOKEN}/setWebhook?url=${encodeURIComponent(webhookUrl)}`,
+    `https://api.telegram.org/bot${TELEGRAM_TOKEN}/setWebhook?url=${encodeURIComponent(webhookUrl)}&drop_pending_updates=true`,
     { muteHttpExceptions: true }
   );
   Logger.log(res.getContentText());
+}
+
+function clearPendingUpdates() {
+  const res = UrlFetchApp.fetch(
+    `https://api.telegram.org/bot${TELEGRAM_TOKEN}/deleteWebhook?drop_pending_updates=true`,
+    { muteHttpExceptions: true }
+  );
+  Logger.log('Delete webhook & drop pending: ' + res.getContentText());
+  setWebhook();
 }
 
 // ─────────────────────────────────────────────
@@ -508,3 +491,4 @@ function setWebhook() {
 function testSendMessage() {
   sendMessage(ADMIN_CHAT_ID, '✅ Bot byhannavi aktif! Ketik /menu untuk mulai.');
 }
+
